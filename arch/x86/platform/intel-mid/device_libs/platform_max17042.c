@@ -71,6 +71,9 @@ void max17042_i2c_reset_workaround(void)
 	if (INTEL_MID_BOARD(3, TABLET, BYT, BLK, PRO, CRV2) ||
 		INTEL_MID_BOARD(3, TABLET, BYT, BLK, ENG, CRV2))
 		i2c_gpio_pin = I2C0_GPIO_PIN_BYT_CR_V2;
+	if(gpio_request(i2c_gpio_pin, "max17042_i2c") < 0)
+		pr_err("max17042 request gpio %d failed\n", i2c_gpio_pin);
+
 	lnw_gpio_set_alt(i2c_gpio_pin, LNW_GPIO);
 	gpio_direction_output(i2c_gpio_pin, 0);
 	gpio_set_value(i2c_gpio_pin, 1);
