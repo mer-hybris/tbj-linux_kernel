@@ -557,6 +557,17 @@ config VLV2_PLAT_CLK
 	---help---
 	 Driver to enable the platform clock control for valleyview2
 
+config MEMNOTIFY
+	tristate "Enables memory notification pseudo-device"
+	default m
+	help
+	  This option enables pseudo-device /dev/memnotify for tracking
+	  system memory utilization and updating state to subscribed clients
+	  when specified threshold reached.
+
+	  Say Y here if you want to support memory monitoring.
+	  If unsure, say N.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
