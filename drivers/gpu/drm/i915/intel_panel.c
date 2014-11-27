@@ -580,7 +580,9 @@ void intel_panel_actually_set_backlight(struct drm_device *dev, u32 level)
 	}
 #ifdef ENABLE_SIO_PWM
 	if (BYT_CR_CONFIG) {
-		level = level * 0xfd / 255 + 50;
+		level = level  + 50;
+		if(level > 0xff)
+			level = 0xff;
 		lpio_bl_write_bits(0, LPIO_PWM_CTRL,(0xFF-level), 0xFF);
 		lpio_bl_update(0, LPIO_PWM_CTRL);
 	} else 
