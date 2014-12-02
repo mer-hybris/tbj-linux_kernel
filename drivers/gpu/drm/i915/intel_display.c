@@ -2164,7 +2164,8 @@ int i915_enable_plane_reserved_reg_bit_2(struct drm_device *dev, void *data,
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	struct drm_i915_reserved_reg_bit_2 *rrb;
-	u32 reg, val;
+	u32 reg1, reg2;
+	u32 val;
 
 	if (!data)
 		return -EINVAL;
@@ -2173,31 +2174,42 @@ int i915_enable_plane_reserved_reg_bit_2(struct drm_device *dev, void *data,
 
 	switch (rrb->plane) {
 	case SPRITEA: /* SPRITE A */
-		reg = SPSURF(0, 0);
+		reg1 = SPSURF(0, 0);
+		reg2 = SPLIVESURF(0, 0);
 		break;
 	case SPRITEB: /* SPRITE B */
-		reg = SPSURF(0, 1);
+		reg1 = SPSURF(0, 1);
+		reg2 = SPLIVESURF(0, 1);
 		break;
 	case SPRITEC: /* SPRITE C */
-		reg = SPSURF(1, 0);
+		reg1 = SPSURF(1, 0);
+		reg2 = SPLIVESURF(1, 0);
 		break;
 	case SPRITED: /* SPRITE D */
-		reg = SPSURF(1, 1);
+		reg1 = SPSURF(1, 1);
+		reg2 = SPLIVESURF(1, 1);
 		break;
-	default:
-		return -EINVAL;
+	default: return -EINVAL;
 	}
 
 	/* Program bit enable if it was requested */
 	if (rrb->enable) {
-		val = I915_READ(reg);
+		val = I915_READ(reg1);
 		val |= PLANE_RESERVED_REG_BIT_2_ENABLE;
-		I915_WRITE(reg, val);
+		I915_WRITE(reg1, val);
+
+		val = I915_READ(reg2);
+		val |= PLANE_RESERVED_REG_BIT_2_ENABLE;
+		I915_WRITE(reg2, val);
 	} else {
 		/* Clear the older rrb setting*/
-		val = I915_READ(reg);
+		val = I915_READ(reg1);
 		val &= ~PLANE_RESERVED_REG_BIT_2_ENABLE;
-		I915_WRITE(reg, val);
+		I915_WRITE(reg1, val);
+
+		val = I915_READ(reg2);
+		val &= ~PLANE_RESERVED_REG_BIT_2_ENABLE;
+		I915_WRITE(reg2, val);
 	}
 
 	return 0;
