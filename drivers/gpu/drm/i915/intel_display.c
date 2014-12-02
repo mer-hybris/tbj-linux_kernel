@@ -2318,7 +2318,7 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 	intel_fb = to_intel_framebuffer(fb);
 	obj = intel_fb->obj;
 
-	if (!dev_priv->atomic_update)
+	if (intel_crtc->last_pixel_size < pixel_size)
 		intel_update_watermarks(dev);
 
 
@@ -2524,9 +2524,12 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 		I915_WRITE(DSPADDR(plane), i915_gem_obj_ggtt_offset(obj) + linear_offset);
 	POSTING_READ(reg);
 
-	if (!dev_priv->atomic_update)
+	if (intel_crtc->last_pixel_size > pixel_size) {
+		dev_priv->pf_change_status[plane] |= BPP_CHANGED_PRIMARY;
 		intel_update_watermarks(dev);
+	}
 
+	intel_crtc->last_pixel_size = pixel_size;
 	return 0;
 }
 
@@ -8576,8 +8579,7 @@ void intel_unpin_work_fn(struct work_struct *__work)
 	 * to push work by another x seconds
 	 */
 	intel_update_drrs(dev);
-	if (!dev_priv->atomic_update)
-		intel_update_watermarks(dev);
+	intel_update_watermarks(dev);
 
 	mutex_unlock(&dev->struct_mutex);
 
@@ -11187,6 +11189,7 @@ static void intel_crtc_init(struct drm_device *dev, int pipe)
 	intel_crtc->primary_alpha = false;
 	intel_crtc->sprite0_alpha = true;
 	intel_crtc->sprite1_alpha = true;
+	intel_crtc->last_pixel_size = 0;
 
 	/* Disable both bend spread initially */
 	dev_priv->clockspread = false;
@@ -11918,6 +11921,7 @@ void intel_modeset_init(struct drm_device *dev)
 					      pipe_name(i), sprite_name(i, j), ret);
 		}
 	}
+	memset(&dev_priv->pf_change_status, 0, sizeof(dev_priv->pf_change_status));
 
 	intel_cpu_pll_init(dev);
 	intel_shared_dpll_init(dev);
