@@ -148,6 +148,8 @@ static struct rt5640_init_reg init_list[] = {
 #endif
 	{RT5640_IRQ_CTRL1, 0x8000}, /* enable jd */
 #endif
+	{RT5640_DRC_AGC_2, 0x1f08},
+	{RT5640_DRC_AGC_1, 0x6206},
 };
 
 #define RT5640_INIT_REG_LEN ARRAY_SIZE(init_list)
@@ -3125,7 +3127,7 @@ static ssize_t rt5640_codec_show(struct device *dev,
 	unsigned int val;
 	int cnt = 0, i;
 
-	cnt += sprintf(buf, "RT5640 codec register\n");
+	codec->cache_bypass = 1;
 	for (i = 0; i <= RT5640_VENDOR_ID2; i++) {
 		if (cnt + RT5640_REG_DISP_LEN >= PAGE_SIZE)
 			break;
@@ -3133,8 +3135,9 @@ static ssize_t rt5640_codec_show(struct device *dev,
 		if (!val)
 			continue;
 		cnt += snprintf(buf + cnt, RT5640_REG_DISP_LEN,
-				"#rng%02x  #rv%04x  #rd0\n", i, val);
+				"%04x: %04x\n", i, val);
 	}
+	codec->cache_bypass = 0;
 
 	if (cnt >= PAGE_SIZE)
 		cnt = PAGE_SIZE - 1;
@@ -3189,6 +3192,122 @@ static ssize_t rt5640_codec_store(struct device *dev,
 }
 
 static DEVICE_ATTR(codec_reg, 0600, rt5640_codec_show, rt5640_codec_store);
+
+static ssize_t rt5640_codec_adb_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+	unsigned int val;
+	int cnt = 0, i;
+
+	for (i = 0; i < rt5640->adb_reg_num; i++) {
+		if (cnt + RT5640_REG_DISP_LEN >= PAGE_SIZE)
+			break;
+
+		switch (rt5640->adb_reg_addr[i] & 0x30000) {
+		case 0x10000:
+			val = rt5640_index_read(codec, rt5640->adb_reg_addr[i] & 0xffff);
+			break;
+		default:
+			val = snd_soc_read(codec, rt5640->adb_reg_addr[i] & 0xffff);
+		}
+
+		cnt += snprintf(buf + cnt, RT5640_REG_DISP_LEN, "%05x: %04x\n",
+			rt5640->adb_reg_addr[i], val);
+	}
+
+	return cnt;
+}
+
+static ssize_t rt5640_codec_adb_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct rt5640_priv *rt5640 = i2c_get_clientdata(client);
+	struct snd_soc_codec *codec = rt5640->codec;
+	unsigned int value = 0;
+	int i = 2, j = 0;
+
+	if (buf[0] == 'R' || buf[0] == 'r') {
+		while (j < 0x100 && i < count) {
+			rt5640->adb_reg_addr[j] = 0;
+			value = 0;
+			for ( ; i < count; i++) {
+				if (*(buf + i) <= '9' && *(buf + i) >= '0')
+					value = (value << 4) | (*(buf + i) - '0');
+				else if (*(buf + i) <= 'f' && *(buf + i) >= 'a')
+					value = (value << 4) | ((*(buf + i) - 'a')+0xa);
+				else if (*(buf + i) <= 'F' && *(buf + i) >= 'A')
+					value = (value << 4) | ((*(buf + i) - 'A')+0xa);
+				else
+					break;
+			}
+			i++;
+
+			rt5640->adb_reg_addr[j] = value;
+			j++;
+		}
+		rt5640->adb_reg_num = j;
+	} else if (buf[0] == 'W' || buf[0] == 'w') {
+		while (j < 0x100 && i < count) {
+			/* Get address */
+			rt5640->adb_reg_addr[j] = 0;
+			value = 0;
+			for ( ; i < count; i++) {
+				if (*(buf + i) <= '9' && *(buf + i) >= '0')
+					value = (value << 4) | (*(buf + i) - '0');
+				else if (*(buf + i) <= 'f' && *(buf + i) >= 'a')
+					value = (value << 4) | ((*(buf + i) - 'a')+0xa);
+				else if (*(buf + i) <= 'F' && *(buf + i) >= 'A')
+					value = (value << 4) | ((*(buf + i) - 'A')+0xa);
+				else
+					break;
+			}
+			i++;
+			rt5640->adb_reg_addr[j] = value;
+
+			/* Get value */
+			rt5640->adb_reg_value[j] = 0;
+			value = 0;
+			for ( ; i < count; i++) {
+				if (*(buf + i) <= '9' && *(buf + i) >= '0')
+					value = (value << 4) | (*(buf + i) - '0');
+				else if (*(buf + i) <= 'f' && *(buf + i) >= 'a')
+					value = (value << 4) | ((*(buf + i) - 'a')+0xa);
+				else if (*(buf + i) <= 'F' && *(buf + i) >= 'A')
+					value = (value << 4) | ((*(buf + i) - 'A')+0xa);
+				else
+					break;
+			}
+			i++;
+			rt5640->adb_reg_value[j] = value;
+
+			j++;
+		}
+
+		rt5640->adb_reg_num = j;
+
+		for (i = 0; i < rt5640->adb_reg_num; i++) {
+			switch (rt5640->adb_reg_addr[i] & 0x30000) {
+			case 0x10000:
+				rt5640_index_write(codec,
+					rt5640->adb_reg_addr[i] & 0xffff,
+					rt5640->adb_reg_value[i]);
+				break;
+			default:
+				snd_soc_write(codec,
+					rt5640->adb_reg_addr[i] & 0xffff,
+					rt5640->adb_reg_value[i]);
+			}
+		}
+
+	}
+
+	return count;
+}
+static DEVICE_ATTR(codec_reg_adb, 0664, rt5640_codec_adb_show, rt5640_codec_adb_store);
 
 static int rt5640_set_bias_level(struct snd_soc_codec *codec,
 				 enum snd_soc_bias_level level)
@@ -3351,6 +3470,13 @@ static int rt5640_probe(struct snd_soc_codec *codec)
 	if (ret != 0) {
 		dev_err(codec->dev,
 			"Failed to create codex_reg sysfs files: %d\n", ret);
+		return ret;
+	}
+
+	ret = device_create_file(codec->dev, &dev_attr_codec_reg_adb);
+	if (ret != 0) {
+		dev_err(codec->dev,
+			"Failed to create codec_reg_adb sysfs files: %d\n", ret);
 		return ret;
 	}
 

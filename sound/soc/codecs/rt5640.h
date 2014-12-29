@@ -2164,6 +2164,9 @@ struct rt5640_priv {
 	unsigned int ovcd_th_base; /* OVCD threshold base value*/
 	unsigned int ovcd_th_sf; /* OVCD threshold scale factor */
 
+	unsigned int adb_reg_addr[0x100];
+	unsigned int adb_reg_value[0x100];
+	unsigned char adb_reg_num;
 };
 
 int rt5640_detect_hs_type(struct snd_soc_codec *codec, int jack_insert);
