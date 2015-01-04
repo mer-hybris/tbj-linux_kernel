@@ -823,9 +823,11 @@ void intel_panel_enable_backlight(struct drm_device *dev,
 			* Assuming only 1 LFP
 			*/
 			pwm_base = compute_pwm_base(dev_priv->vbt.pwm_frequency);
-			#ifdef CONFIG_MRD8
+			printk("revert pwm freq to several hundred hz\n");
+		/*	#ifdef CONFIG_MRD8
 			dev_priv->vbt.pwm_frequency = 15000;
 			#endif
+		*/
 			pwm_base = pwm_base << 8;
 			lpio_bl_write(0, LPIO_PWM_CTRL, pwm_base | 0xFF);
 			lpio_bl_update(0, LPIO_PWM_CTRL);
