@@ -42,7 +42,7 @@
 #define USE_ONEBIT_DEPOP 0	/* for one bit depop */
 #define HEADSET_DET_DELAY    20 /* Delay(ms) before reading over current
 				    status for headset detection */
-/*#define USE_EQ*/
+#define USE_EQ
 #define USE_ASRC
 #define VERSION "0.8.4 alsa 1.0.25"
 
@@ -148,7 +148,7 @@ static struct rt5640_init_reg init_list[] = {
 #endif
 	{RT5640_IRQ_CTRL1, 0x8000}, /* enable jd */
 #endif
-	{RT5640_DRC_AGC_2, 0x1f08},
+	{RT5640_DRC_AGC_2, 0x1fa4},
 	{RT5640_DRC_AGC_1, 0x6206},
 };
 
