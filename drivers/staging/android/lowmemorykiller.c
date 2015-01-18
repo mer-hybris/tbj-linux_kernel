@@ -51,6 +51,8 @@
 #define _ZONE ZONE_NORMAL
 #endif
 
+#define MAX_SWAP_COMMIT 70
+
 static uint32_t lowmem_debug_level = 1;
 static short lowmem_adj[6] = {
 	0,
@@ -184,20 +186,23 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	int array_size = ARRAY_SIZE(lowmem_adj);
 	int other_free = global_page_state(NR_FREE_PAGES) - totalreserve_pages;
 	int other_file;
+        struct sysinfo si;
+        int relative_freeswap;
+
 
         if (sc->nr_to_scan > 0) {
                 if (mutex_lock_interruptible(&scan_mutex) < 0)
                         return 0;
         }
 
-        if (global_page_state(NR_SHMEM) + total_swapcache_pages() <
-                global_page_state(NR_FILE_PAGES))
-                other_file = global_page_state(NR_FILE_PAGES) -
-                                                global_page_state(NR_SHMEM) -
-                                                total_swapcache_pages();
-        else
-                other_file = 0;
+	si_swapinfo(&si);
 
+        relative_freeswap = si.freeswap - (si.totalswap * (100-MAX_SWAP_COMMIT))/100 > 0
+                                ? si.freeswap - (si.totalswap * (100-MAX_SWAP_COMMIT))/100 : 0;
+
+        other_file = global_page_state(NR_FILE_PAGES) + relative_freeswap -
+                                global_page_state(NR_SHMEM) -
+                                total_swapcache_pages();
 
 	tune_lmk_param(&other_free, &other_file, sc);
 
