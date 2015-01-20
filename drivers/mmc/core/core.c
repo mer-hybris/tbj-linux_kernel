@@ -1026,7 +1026,7 @@ static inline void mmc_set_ios(struct mmc_host *host)
 {
 	struct mmc_ios *ios = &host->ios;
 
-	pr_debug("%s: clock %uHz busmode %u powermode %u cs %u Vdd %u "
+	pr_err("%s: clock %uHz busmode %u powermode %u cs %u Vdd %u "
 		"width %u timing %u\n",
 		 mmc_hostname(host), ios->clock, ios->bus_mode,
 		 ios->power_mode, ios->chip_select, ios->vdd,
@@ -2274,6 +2274,7 @@ int mmc_can_reset(struct mmc_card *card)
 }
 EXPORT_SYMBOL(mmc_can_reset);
 
+int reseting = 0;
 static int mmc_do_hw_reset(struct mmc_host *host, int check)
 {
 	struct mmc_card *card = host->card;
@@ -2348,6 +2349,7 @@ static int mmc_do_hw_reset(struct mmc_host *host, int check)
 
 	mmc_host_clk_release(host);
 
+	reseting++;
 	return host->bus_ops->power_restore(host);
 }
 

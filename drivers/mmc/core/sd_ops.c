@@ -312,6 +312,7 @@ int mmc_sd_switch(struct mmc_card *card, int mode, int group,
 	BUG_ON(!card);
 	BUG_ON(!card->host);
 
+	pr_err("%s speed %d\n", __func__, value);
 	/* NOTE: caller guarantees resp is heap-allocated */
 
 	mode = !!mode;

@@ -449,6 +449,7 @@ static void sd_update_bus_speed_mode(struct mmc_card *card)
 	 */
 	if (!mmc_host_uhs(card->host)) {
 		card->sd_bus_speed = 0;
+		pr_err("%s speed %d\n", __func__, card->sd_bus_speed);
 		return;
 	}
 
@@ -472,13 +473,17 @@ static void sd_update_bus_speed_mode(struct mmc_card *card)
 		    SD_MODE_UHS_SDR12)) {
 			card->sd_bus_speed = UHS_SDR12_BUS_SPEED;
 	}
+	pr_err("%s speed %d\n", __func__, card->sd_bus_speed);
 }
+
+extern int reseting;
 
 static int sd_set_bus_speed_mode(struct mmc_card *card, u8 *status)
 {
 	int err;
 	unsigned int timing = 0;
 
+	pr_err("%s reseting = %d\n", __func__, reseting);
 	switch (card->sd_bus_speed) {
 	case UHS_SDR104_BUS_SPEED:
 		timing = MMC_TIMING_UHS_SDR104;
@@ -486,7 +491,10 @@ static int sd_set_bus_speed_mode(struct mmc_card *card, u8 *status)
 		break;
 	case UHS_DDR50_BUS_SPEED:
 		timing = MMC_TIMING_UHS_DDR50;
-		card->sw_caps.uhs_max_dtr = UHS_DDR50_MAX_DTR;
+		if (reseting <= 3)
+			card->sw_caps.uhs_max_dtr = UHS_DDR50_MAX_DTR;
+		else
+			card->sw_caps.uhs_max_dtr = 49999999;
 		break;
 	case UHS_SDR50_BUS_SPEED:
 		timing = MMC_TIMING_UHS_SDR50;
@@ -494,7 +502,10 @@ static int sd_set_bus_speed_mode(struct mmc_card *card, u8 *status)
 		break;
 	case UHS_SDR25_BUS_SPEED:
 		timing = MMC_TIMING_UHS_SDR25;
-		card->sw_caps.uhs_max_dtr = UHS_SDR25_MAX_DTR;
+		if (reseting <= 3)
+			card->sw_caps.uhs_max_dtr = UHS_SDR25_MAX_DTR;
+		else
+			card->sw_caps.uhs_max_dtr = 49999999;
 		break;
 	case UHS_SDR12_BUS_SPEED:
 		timing = MMC_TIMING_UHS_SDR12;
@@ -914,6 +925,7 @@ unsigned mmc_sd_get_max_clock(struct mmc_card *card)
 
 void mmc_sd_go_highspeed(struct mmc_card *card)
 {
+	pr_err("%s set high speed\n", __func__);
 	mmc_card_set_highspeed(card);
 	mmc_set_timing(card->host, MMC_TIMING_SD_HS);
 }
@@ -1086,6 +1098,8 @@ static void mmc_sd_detect(struct mmc_host *host)
 	BUG_ON(!host->card);
 
 	mmc_claim_host(host);
+	reseting = 0;
+	pr_err("%s run detected\n", __func__);
 
 	/*
 	 * Just check if our card has been removed.
