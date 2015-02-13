@@ -1748,7 +1748,9 @@ void intel_hdmi_init_connector(struct intel_digital_port *intel_dig_port,
 	* not the hot_plug(). After init, we can detect plug-in/out in
 	* hot-plug functions
 	*/
-	intel_hdmi->edid = intel_hdmi_get_edid(connector, true);
+	/* HACK: no HDMI port assembled in Jolla tablet */
+	intel_hdmi->edid = NULL;
+	/* intel_hdmi->edid = intel_hdmi_get_edid(connector, true); */
 
 	/* Update the first status */
 	connector->status = intel_hdmi_detect(connector, false);
