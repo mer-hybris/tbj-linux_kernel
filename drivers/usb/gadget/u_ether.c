@@ -786,7 +786,7 @@ struct eth_dev *gether_setup_name(struct usb_gadget *g, u8 ethaddr[ETH_ALEN],
 	if (get_ether_addr(dev_addr, net->dev_addr))
 		dev_warn(&g->dev,
 			"using random %s ethernet address\n", "self");
-	if (ethaddr)
+	if (ethaddr && is_valid_ether_addr(ethaddr))
 		memcpy(dev->host_mac, ethaddr, ETH_ALEN);
 	else {
 		if (get_ether_addr(host_addr, dev->host_mac))
