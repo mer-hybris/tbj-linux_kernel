@@ -902,7 +902,7 @@ static void pmic_chrg_init_irq(struct pmic_chrg_info *info)
 			info->irq[i] = -1;
 			goto intr_failed;
 		} else {
-			dev_info(&info->pdev->dev, "IRQ No:%d\n", info->irq[i]);
+			dev_dbg(&info->pdev->dev, "IRQ No:%d\n", info->irq[i]);
 		}
 	}
 
