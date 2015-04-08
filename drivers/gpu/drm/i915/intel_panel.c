@@ -742,7 +742,7 @@ void intel_panel_disable_backlight(struct drm_device *dev)
 	spin_unlock_irqrestore(&dev_priv->backlight.lock, flags);
 #endif
 }
-#ifdef CONFIG_CRYSTAL_COVE
+#if defined CONFIG_CRYSTAL_COVE && defined CONFIG_BACKLIGHT_LP855X
 static void scheduled_led_chip_programming(struct work_struct *work)
 {
 	lp855x_ext_write_byte(LP8556_CFG9,
@@ -948,7 +948,7 @@ static void intel_panel_init_backlight(struct drm_device *dev)
     dev_priv->backlight.level = 100;
 #endif
 	dev_priv->backlight.enabled = dev_priv->backlight.level != 0;
-#ifdef CONFIG_CRYSTAL_COVE
+#if defined CONFIG_CRYSTAL_COVE && defined CONFIG_BACKLIGHT_LP855X
 	if (BYT_CR_CONFIG)
 		INIT_DELAYED_WORK(&dev_priv->bkl_delay_enable_work,
 				scheduled_led_chip_programming);
