@@ -1327,7 +1327,7 @@ void ironlake_edp_backlight_on(struct intel_dp *intel_dp)
 	 * link.  So delay a bit to make sure the image is solid before
 	 * allowing it to appear.
 	 */
-	msleep(intel_dp->backlight_on_delay);
+	msleep(intel_dp->backlight_on_delay + 100);
 	pp = ironlake_get_pp_control(intel_dp);
 	pp |= EDP_BLC_ENABLE;
 

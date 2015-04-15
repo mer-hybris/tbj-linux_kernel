@@ -954,6 +954,8 @@ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
 	return ERR_CONTINUE;
 }
 
+extern int reseting;
+
 static int mmc_blk_reset(struct mmc_blk_data *md, struct mmc_host *host,
 			 int type)
 {
@@ -961,6 +963,7 @@ static int mmc_blk_reset(struct mmc_blk_data *md, struct mmc_host *host,
 
 	pr_err("%s: mmc_blk_reset: md->reset_done (0x%x), type (0x%x)\n",
 		md->disk->disk_name, md->reset_done, type);
+	reseting = 4;
 
 	if (md->reset_done & type)
 		return -EEXIST;

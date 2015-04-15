@@ -894,10 +894,10 @@ static int pmic_fg_program_design_cap(struct pmic_fg_info *info)
 	}
 
 	if (buf[0] == info->cfg->cap1 && buf[1] == info->cfg->cap0) {
-		dev_info(&info->pdev->dev, "design cap is already initialized\n");
+		dev_dbg(&info->pdev->dev, "design cap is already initialized\n");
 		return 0;
 	} else {
-		dev_info(&info->pdev->dev, "design cap need to be initialized\n");
+		dev_dbg(&info->pdev->dev, "design cap need to be initialized\n");
 	}
 
 	//Disable coulomb meter
@@ -937,10 +937,10 @@ static int pmic_fg_program_rdc_vals(struct pmic_fg_info *info)
 	}
 
 	if (buf[0] == info->cfg->rdc1 && buf[1] == info->cfg->rdc0) {
-		dev_info(&info->pdev->dev, "RDC is already initialized\n");
+		dev_dbg(&info->pdev->dev, "RDC is already initialized\n");
 		return 0;
 	} else {
-		dev_info(&info->pdev->dev, "RDC need to be initialized\n");
+		dev_dbg(&info->pdev->dev, "RDC need to be initialized\n");
 	}
 
 	ret = pmic_fg_reg_writeb(info, DC_FG_RDC1_REG, info->cfg->rdc1);
@@ -964,13 +964,13 @@ static void pmic_fg_init_config_regs(struct pmic_fg_info *info)
 	if (ret < 0) {
 		dev_warn(&info->pdev->dev, "FG CNTL reg read err!!\n");
 	} else if ((ret & FG_CNTL_OCV_ADJ_EN) && (ret & FG_CNTL_CAP_ADJ_EN)) {
-		dev_info(&info->pdev->dev, "FG data is already initialized\n");
+		dev_dbg(&info->pdev->dev, "FG data is already initialized\n");
 		/* comment the following for FW may have touched the regsiters */
 		/* info->fg_init_done = true; */
 		/* pmic_fg_dump_init_regs(info); */
 		/* return; */
 	} else {
-		dev_info(&info->pdev->dev, "FG data need to be initialized\n");
+		dev_dbg(&info->pdev->dev, "FG data need to be initialized\n");
 	}
 
 
@@ -999,7 +999,8 @@ static void pmic_fg_init_config_regs(struct pmic_fg_info *info)
 		dev_err(&info->pdev->dev, "gauge cntl set fail:%d\n", ret);
 
 	info->fg_init_done = true;
-	pmic_fg_dump_init_regs(info);
+	/* no need to dump registers except in debug cases
+	pmic_fg_dump_init_regs(info); */
 }
 
 static void pmic_fg_init_irq(struct pmic_fg_info *info)
@@ -1017,7 +1018,7 @@ static void pmic_fg_init_irq(struct pmic_fg_info *info)
 			info->irq[i] = -1;
 			goto intr_failed;
 		} else {
-			dev_info(&info->pdev->dev, "IRQ No:%d\n", info->irq[i]);
+			dev_dbg(&info->pdev->dev, "IRQ No:%d\n", info->irq[i]);
 		}
 	}
 	return;

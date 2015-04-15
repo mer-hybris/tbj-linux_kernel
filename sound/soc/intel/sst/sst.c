@@ -1071,7 +1071,7 @@ static int intel_sst_runtime_idle(struct device *dev)
 {
 	struct intel_sst_drv *ctx = dev_get_drvdata(dev);
 
-	pr_info("runtime_idle called\n");
+	pr_debug("runtime_idle called\n");
 	if (ctx->sst_state != SST_UN_INIT) {
 		pm_schedule_suspend(dev, SST_SUSPEND_DELAY);
 		return -EBUSY;

@@ -620,6 +620,7 @@ rndis_function_bind_config(struct android_usb_function *f,
 		return ret;
 	}
 	rndis->dev = dev;
+	memcpy(rndis->ethaddr, dev->host_mac, ETH_ALEN);
 
 	if (rndis->wceis) {
 		/* "Wireless" RNDIS; auto-detected by Windows */

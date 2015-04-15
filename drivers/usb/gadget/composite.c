@@ -860,6 +860,11 @@ void usb_remove_config(struct usb_composite_dev *cdev,
 {
 	unsigned long flags;
 
+	if (config->cdev == NULL) {
+		pr_warn("Calling usb_remove_config without a matching usb_add_config!\n");
+		goto end;
+	}
+
 	spin_lock_irqsave(&cdev->lock, flags);
 
 	if (cdev->config == config)
@@ -868,7 +873,7 @@ void usb_remove_config(struct usb_composite_dev *cdev,
 	list_del(&config->list);
 
 	spin_unlock_irqrestore(&cdev->lock, flags);
-
+end:
 	unbind_config(cdev, config);
 }
 
