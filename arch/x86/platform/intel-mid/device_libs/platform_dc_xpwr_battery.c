@@ -111,7 +111,7 @@ static void *get_platform_data(void)
 	}
 
 	pdata.batt_adc_to_temp = dc_xpwr_get_batt_temp;
-	pdata.design_cap = 3724;
+	pdata.design_cap = 4450;
 	pdata.design_min_volt = 3400;
 	pdata.design_max_volt = 4350;
 	pdata.max_temp = 55;
