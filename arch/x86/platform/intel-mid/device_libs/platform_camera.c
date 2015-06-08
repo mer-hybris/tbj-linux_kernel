@@ -232,7 +232,7 @@ static struct camera_device_table byt_crv2_cam_table[] = {
 		{"ov5670", SFI_DEV_TYPE_I2C, 0, &ov5670_platform_data,
 			&intel_register_i2c_camera_device}
 	},  {
-		{SFI_DEV_TYPE_I2C, 2, 0x10, 0x0, 0x0, "ov5693"},
+		{SFI_DEV_TYPE_I2C, 2, 0x36, 0x0, 0x0, "ov5693"},
 		{"ov5693", SFI_DEV_TYPE_I2C, 0, &ov5693_platform_data,
 			&intel_register_i2c_camera_device}
 	}, {
