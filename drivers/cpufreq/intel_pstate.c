@@ -103,10 +103,10 @@ struct pstate_adjust_policy {
 static struct pstate_adjust_policy default_policy = {
 	.sample_rate_ms = 10,
 	.deadband = 0,
-	.setpoint = 97,
+	.setpoint = 60,
 	.p_gain_pct = 20,
 	.d_gain_pct = 0,
-	.i_gain_pct = 0,
+	.i_gain_pct = 4,
 };
 
 struct perf_limits {
