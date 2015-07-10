@@ -84,6 +84,12 @@
 #define GPIO_NC_10_PAD                  0x40E8
 #define GPIO_NC_11_PCONF0               0x40F0
 #define GPIO_NC_11_PAD                  0x40F8
+#define GPIO_NC_19_PCONF0               0x4000
+#define GPIO_NC_19_PAD                  0x4008
+#define GPIO_NC_20_PCONF0               0x4030
+#define GPIO_NC_20_PAD                  0x4038
+#define GPIO_NC_16_PCONF0               0x4040
+#define GPIO_NC_16_PAD                  0x4048
 
 struct intel_dsi_device {
 	unsigned int panel_id;

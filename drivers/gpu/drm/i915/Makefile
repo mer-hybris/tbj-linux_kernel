@@ -84,4 +84,6 @@ i915-$(CONFIG_ACPI)	+= intel_acpi.o
 
 obj-$(CONFIG_DRM_I915)  += i915.o
 
+i915-$(CONFIG_SUPPORT_EDP_BRIDGE_TC358860) += edp_bridge_tc358860.o
+
 CFLAGS_i915_trace_points.o := -I$(src)

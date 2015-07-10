@@ -78,6 +78,10 @@ void my_drm_ut_debug_printk(unsigned int request_level,
 
 #define MAX_BRIGHTNESS	255
 
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+extern void tc358860_send_init_cmd3(void);
+#endif
+
 /*extern*/ int __wait_seqno(struct intel_ring_buffer *ring, u32 seqno,
 				unsigned reset_counter,
 				bool interruptible, struct timespec *timeout);
@@ -2451,6 +2455,9 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 	}
 
 	intel_crtc->last_pixel_size = pixel_size;
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+        tc358860_send_init_cmd3();
+#endif
 	return 0;
 }
 
@@ -11128,8 +11135,8 @@ static void intel_setup_outputs(struct drm_device *dev)
 #endif
 			intel_dp_init(dev, VLV_DISPLAY_BASE + DP_C, PORT_C);
 
-		intel_hdmi_init(dev, VLV_DISPLAY_BASE + GEN4_HDMIB,
-				PORT_B);
+		//intel_hdmi_init(dev, VLV_DISPLAY_BASE + GEN4_HDMIB,
+				//PORT_B);
 	} else if (SUPPORTS_DIGITAL_OUTPUTS(dev)) {
 		bool found = false;
 
