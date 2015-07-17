@@ -40,6 +40,12 @@
 /*Added for HDMI Audio */
 #include "hdmi_audio_if.h"
 
+
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+extern void tc358860_bridge_enable(struct drm_device *dev);
+extern void tc358860_bridge_disable(struct drm_device *dev);
+#endif
+
 int i915_rotation __read_mostly;
 module_param_named(i915_rotation, i915_rotation, int, 0600);
 MODULE_PARM_DESC(i915_rotation,
@@ -748,6 +754,10 @@ int i915_resume_common(struct drm_device *dev, bool restore_gtt)
 		return ret;
 
 	drm_kms_helper_poll_enable(dev);
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+	DRM_DEBUG_PM("PM enable TC bridge\n");
+	tc358860_bridge_enable(dev);
+#endif
 
 	return 0;
 }
@@ -1050,6 +1060,10 @@ static int i915_suspend_common(struct device *dev)
 
 	pci_disable_device(pdev);
 	pci_set_power_state(pdev, PCI_D3hot);
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+	DRM_DEBUG_PM("PM disable TC bridge\n");
+	tc358860_bridge_disable(drm_dev);
+#endif
 
 	return 0;
 }

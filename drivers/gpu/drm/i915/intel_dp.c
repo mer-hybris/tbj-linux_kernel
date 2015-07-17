@@ -2149,7 +2149,7 @@ static void intel_enable_dp(struct intel_encoder *encoder)
 #ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
 	tc358860_send_init_cmd2(intel_dp);
 #endif
-	ironlake_edp_backlight_on(intel_dp);
+	//ironlake_edp_backlight_on(intel_dp);
 }
 
 static void vlv_enable_dp(struct intel_encoder *encoder)
