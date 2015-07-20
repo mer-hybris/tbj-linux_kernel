@@ -59,8 +59,15 @@ extern int ps8622_init(void) ;
 #define DP_LINK_CHECK_TIMEOUT	(10 * 1000)
 #define EDP_PSR_MODE 0 /* 0 = HW TIMER, 1 = SW TIMER */
 
-
-
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+extern void tc358860_bridge_enable(struct drm_device *dev);
+extern void tc358860_bridge_disable(struct drm_device *dev);
+extern int tc358860_init(struct drm_device *dev);
+extern void tc358860_send_init_cmd1(struct intel_dp *intel_dp);
+extern void tc358860_send_init_cmd2(struct intel_dp *intel_dp);
+extern struct edid *tc358860_get_edid(void);
+static bool intel_dp_get_link_status(struct intel_dp *intel_dp, uint8_t link_status[DP_LINK_STATUS_SIZE]);
+#endif
 
 #ifdef CONFIG_MRD7
 
@@ -554,6 +561,13 @@ intel_dp_aux_native_write(struct intel_dp *intel_dp,
 	msg[3] = send_bytes - 1;
 	memcpy(&msg[4], send, send_bytes);
 	msg_bytes = send_bytes + 4;
+        DRM_DEBUG_KMS("link training write reg addr: 0x%x\n", address);
+#if 0
+        if (address == 0x103) {
+                DRM_DEBUG_KMS("ignore reg: 0x%x\n", address);
+                return send_bytes;
+        }
+#endif
 	for (;;) {
 		ret = intel_dp_aux_ch(intel_dp, msg, msg_bytes, &ack, 1);
 		if (ret < 0)
@@ -2086,6 +2100,10 @@ static void intel_disable_dp(struct intel_encoder *encoder)
 	intel_dp_ctrl_lvds_panel(dev, intel_dp, false, false);
 	intel_dp->bridge_setup_done = false;
 #endif
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+	tc358860_bridge_disable(dev);
+	intel_dp->bridge_setup_done = true;
+#endif
 }
 
 static void intel_post_disable_dp(struct intel_encoder *encoder)
@@ -2115,12 +2133,22 @@ static void intel_enable_dp(struct intel_encoder *encoder)
 	intel_dp_ctrl_lvds_panel(dev, intel_dp, true, true);
 	ps8622_send_init_cmd(intel_dp);
 #endif
+
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+	if (intel_dp->bridge_setup_done == true)
+	        tc358860_bridge_enable(dev);
+	intel_dp->bridge_setup_done = false;
+	tc358860_send_init_cmd1(intel_dp);
+#endif
 	intel_dp_sink_dpms(intel_dp, DRM_MODE_DPMS_ON);
 	intel_dp_start_link_train(intel_dp);
 	ironlake_edp_panel_on(intel_dp);
 	ironlake_edp_panel_vdd_off(intel_dp, true);
 	intel_dp_complete_link_train(intel_dp);
 	intel_dp_stop_link_train(intel_dp);
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+	tc358860_send_init_cmd2(intel_dp);
+#endif
 	//ironlake_edp_backlight_on(intel_dp);
 }
 
@@ -2215,6 +2243,9 @@ intel_dp_aux_native_read_retry(struct intel_dp *intel_dp, uint16_t address,
 	for (i = 0; i < 3; i++) {
 		ret = intel_dp_aux_native_read(intel_dp, address, recv,
 					       recv_bytes);
+                if (address == 0x202)
+                        DRM_DEBUG_KMS("AAAAAA, read reg: 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", recv[0],
+                                        recv[1], recv[2], recv[3], recv[4], recv[5]);
 		if (ret == recv_bytes)
 			return true;
 		msleep(1);
@@ -2253,6 +2284,7 @@ static char	*link_train_names[] = {
  * a maximum voltage of 800mV and a maximum pre-emphasis of 6dB
  */
 
+#if 0
 static uint8_t
 intel_dp_voltage_max(struct intel_dp *intel_dp)
 {
@@ -2323,6 +2355,7 @@ intel_dp_pre_emphasis_max(struct intel_dp *intel_dp, uint8_t voltage_swing)
 		}
 	}
 }
+#endif
 
 static uint32_t intel_vlv_signal_levels(struct intel_dp *intel_dp)
 {
@@ -2421,6 +2454,7 @@ static uint32_t intel_vlv_signal_levels(struct intel_dp *intel_dp)
 	return 0;
 }
 
+#if 0
 static
 void Set_Vswing_Preemphasis(struct intel_dp *intel_dp, uint8_t v, uint8_t p)
 {
@@ -2553,6 +2587,7 @@ intel_get_adjust_train(struct intel_dp *intel_dp, uint8_t link_status[DP_LINK_ST
 	for (lane = 0; lane < 4; lane++)
 		intel_dp->train_set[lane] = v | p;
 }
+#endif
 
 static uint32_t
 intel_gen4_signal_levels(uint8_t train_set)
@@ -2791,24 +2826,33 @@ intel_dp_set_link_train(struct intel_dp *intel_dp,
 			dp_reg_value |= DP_LINK_TRAIN_PAT_2;
 			break;
 		}
-	}
+        }
 
-	I915_WRITE(intel_dp->output_reg, dp_reg_value);
-	POSTING_READ(intel_dp->output_reg);
+        I915_WRITE(intel_dp->output_reg, dp_reg_value);
+        POSTING_READ(intel_dp->output_reg);
 
-	intel_dp_aux_native_write_1(intel_dp,
-				    DP_TRAINING_PATTERN_SET,
-				    dp_train_pat);
+        intel_dp_aux_native_write_1(intel_dp,
+                        DP_TRAINING_PATTERN_SET,
+                        dp_train_pat);
 
-	if ((dp_train_pat & DP_TRAINING_PATTERN_MASK) !=
-	    DP_TRAINING_PATTERN_DISABLE) {
-		ret = intel_dp_aux_native_write(intel_dp,
-						DP_TRAINING_LANE0_SET,
-						intel_dp->train_set,
-						intel_dp->lane_count);
-		if (ret != intel_dp->lane_count)
-			return false;
-	}
+        if ((dp_train_pat & DP_TRAINING_PATTERN_MASK) == DP_TRAINING_PATTERN_1)
+                DRM_DEBUG_KMS("AAAAAAAAA, TRAIN_PAT_1\n");
+        if ((dp_train_pat & DP_TRAINING_PATTERN_MASK) == DP_TRAINING_PATTERN_2)
+                DRM_DEBUG_KMS("AAAAAAAAA, TRAIN_PAT_2\n");
+
+        //if ((dp_train_pat & DP_TRAINING_PATTERN_MASK) != DP_LINK_TRAIN_PAT_2) {
+        if ((dp_train_pat & DP_TRAINING_PATTERN_MASK) !=
+                        DP_TRAINING_PATTERN_DISABLE) {
+                DRM_DEBUG_KMS("AAAAAAAAA, 0x%x, 0x%x, 0x%x, 0x%x\n", intel_dp->train_set[0],
+                                intel_dp->train_set[1], intel_dp->train_set[2], intel_dp->train_set[3]);
+                ret = intel_dp_aux_native_write(intel_dp,
+                                DP_TRAINING_LANE0_SET,
+                                intel_dp->train_set,
+                                intel_dp->lane_count);
+                if (ret != intel_dp->lane_count)
+                        return false;
+        }
+        //}
 
 	return true;
 }
@@ -2855,6 +2899,7 @@ intel_dp_start_link_train(struct intel_dp *intel_dp)
 	int voltage_tries, loop_tries;
 	uint32_t DP = intel_dp->DP;
 
+        DRM_DEBUG_KMS("\n");
 	if (HAS_DDI(dev))
 		intel_ddi_prepare_link_retrain(encoder);
 
@@ -2919,7 +2964,7 @@ intel_dp_start_link_train(struct intel_dp *intel_dp)
 		voltage = intel_dp->train_set[0] & DP_TRAIN_VOLTAGE_SWING_MASK;
 
 		/* Compute new intel_dp->train_set as requested by target */
-		intel_get_adjust_train(intel_dp, link_status);
+		//intel_get_adjust_train(intel_dp, link_status);
 	}
 
 	intel_dp->DP = DP;
@@ -2936,6 +2981,7 @@ intel_dp_complete_link_train(struct intel_dp *intel_dp)
 	tries = 0;
 	cr_tries = 0;
 	channel_eq = false;
+        DRM_DEBUG_KMS("\n");
 	for (;;) {
 		uint8_t	    link_status[DP_LINK_STATUS_SIZE];
 
@@ -2979,7 +3025,7 @@ intel_dp_complete_link_train(struct intel_dp *intel_dp)
 		}
 
 		/* Compute new intel_dp->train_set as requested by target */
-		intel_get_adjust_train(intel_dp, link_status);
+		//intel_get_adjust_train(intel_dp, link_status);
 		++tries;
 	}
 
@@ -3341,7 +3387,11 @@ intel_dp_get_edid(struct drm_connector *connector, struct i2c_adapter *adapter)
 		return edid;
 	}
 
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+        return tc358860_get_edid();
+#else
 	return drm_get_edid(connector, adapter);
+#endif
 }
 
 static int
@@ -3631,8 +3681,12 @@ static void
 intel_dp_hot_plug(struct intel_encoder *intel_encoder)
 {
 	struct intel_dp *intel_dp = enc_to_intel_dp(&intel_encoder->base);
+	u8 link_status[DP_LINK_STATUS_SIZE];
 
-	intel_dp_check_link_status(intel_dp);
+	//intel_dp_check_link_status(intel_dp);
+        //
+        DRM_DEBUG_KMS("\n");
+	intel_dp_get_link_status(intel_dp, link_status);
 }
 
 /* Return which DP Port should be selected for Transcoder DP control */
@@ -4022,7 +4076,12 @@ static bool intel_edp_init_connector(struct intel_dp *intel_dp,
 						      &power_seq);
 
 	ironlake_edp_panel_vdd_on(intel_dp);
+
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+	edid = tc358860_get_edid();
+#else
 	edid = drm_get_edid(connector, &intel_dp->adapter);
+#endif
 	if (edid) {
 		if (drm_add_edid_modes(connector, edid)) {
 			drm_mode_connector_update_edid_property(connector,
@@ -4082,6 +4141,11 @@ intel_dp_init_connector(struct intel_digital_port *intel_dig_port,
 	intel_dp->bridge_setup_done = false;
 	intel_dp_ctrl_lvds_panel(dev, intel_dp, true, false);
 
+#endif
+
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+	tc358860_bridge_enable(dev);
+	intel_dp->bridge_setup_done = false;
 #endif
 	/* Preserve the current hw state. */
 	intel_dp->DP = I915_READ(intel_dp->output_reg);
@@ -4271,6 +4335,9 @@ intel_dp_init(struct drm_device *dev, int output_reg, enum port port)
 	ps8622_init();
 #endif  
 
+#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+        tc358860_init(dev);
+#endif
 	intel_connector->panel.fitting_mode = 0;
 	if (!intel_dp_init_connector(intel_dig_port, intel_connector)) {
 		drm_encoder_cleanup(encoder);
