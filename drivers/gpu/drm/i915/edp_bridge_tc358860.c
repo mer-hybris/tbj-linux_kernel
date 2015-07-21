@@ -682,8 +682,31 @@ void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
         tc358860_regw32(tc358860_client, 0x2a04, 0x01);
         tc358860_regw32(tc358860_client, 0x3a04, 0x01);
 }
+void tc358860_cmd3_work_fboot(void)
+{
+        DRM_DEBUG_KMS("\n");
+        tc358860_regw32(tc358860_client, 0x0154, 0x01);
+        tc358860_read_reg(0xb228, 0x0f50, 0xffff, 16);
+        tc358860_read_reg(0xb22a, 0x0880, 0xffff, 16);
+        tc358860_read_reg(0xb22c, 0x8020, 0xffff, 16);
+        tc358860_read_reg(0xb22e, 0x0048, 0xffff, 16);
+        tc358860_read_reg(0xb230, 0x0008, 0xffff, 16);
+        tc358860_read_reg(0xb232, 0x8002, 0xffff, 16);
+        tc358860_read_reg(0xb234, 0x0f00, 0xffff, 16);
+        tc358860_read_reg(0xb236, 0x0870, 0xffff, 16);
+        tc358860_read_reg(0x8202, 0x77, 0xff, 8);
+        tc358860_read_reg(0x8203, 0x77, 0xff, 8);
+        tc358860_read_reg1(0x8204, 0x81, 0x01, 0xff, 8);
+        tc358860_read_reg(0x810a, 0xff, 0xff, 8);
+        tc358860_read_reg(0x8206, 0xff, 0xff, 8);
+        tc358860_read_reg(0x8207, 0xff, 0xff, 8);
+        tc358860_read_reg(0x8103, 0xff, 0xff, 8);
+        tc358860_read_reg(0x8104, 0xff, 0xff, 8);
+        tc358860_read_reg(0x8105, 0xff, 0xff, 8);
+        tc358860_read_reg(0x8106, 0xff, 0xff, 8);
+	tc358860_read_reg(0x8101, 0x84, 0xff, 8);
+}
 
-//void tc358860_cmd3_work(void)
 void tc358860_cmd3_work(struct work_struct *work)
 {
         DRM_DEBUG_KMS("\n");

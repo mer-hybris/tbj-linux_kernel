@@ -65,6 +65,7 @@ extern void tc358860_bridge_disable(struct drm_device *dev);
 extern int tc358860_init(struct drm_device *dev);
 extern void tc358860_send_init_cmd1(struct intel_dp *intel_dp);
 extern void tc358860_send_init_cmd2(struct intel_dp *intel_dp);
+extern void tc358860_cmd3_work_fboot(void);
 extern struct edid *tc358860_get_edid(void);
 static bool intel_dp_get_link_status(struct intel_dp *intel_dp, uint8_t link_status[DP_LINK_STATUS_SIZE]);
 #endif
@@ -2148,6 +2149,7 @@ static void intel_enable_dp(struct intel_encoder *encoder)
 	intel_dp_stop_link_train(intel_dp);
 #ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
 	tc358860_send_init_cmd2(intel_dp);
+	tc358860_cmd3_work_fboot();
 #endif
 	//ironlake_edp_backlight_on(intel_dp);
 }
