@@ -79,6 +79,7 @@ void my_drm_ut_debug_printk(unsigned int request_level,
 #define MAX_BRIGHTNESS	255
 
 #ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
+extern int tc358860_has_hw(void);
 extern void tc358860_send_init_cmd3(void);
 #endif
 
@@ -2455,9 +2456,9 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 	}
 
 	intel_crtc->last_pixel_size = pixel_size;
-#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
-        tc358860_send_init_cmd3();
-#endif
+	if (tc358860_has_hw()) {
+	        tc358860_send_init_cmd3();
+	}
 	return 0;
 }
 

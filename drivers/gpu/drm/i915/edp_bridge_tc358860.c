@@ -88,6 +88,17 @@ static struct i2c_client *tc358860_client = NULL;
 static struct delayed_work tc358860_work;
 static int num_tc358860 = 0;
 
+int tc358860_has_hw(void)
+{
+	if (!init_done) {
+		pr_warning("%s: warning, hw not detected yet!", __func__);
+		WARN_ON(1);
+		/* Favor new display in case of error and assume HW exists */
+		return 1;
+	}
+	return !hw_missing;
+}
+
 struct edid *tc358860_get_edid(void)
 {
         u8 *block;
