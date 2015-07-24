@@ -47,6 +47,7 @@
 #include <linux/regulator/consumer.h>
 #include <asm/spid.h>
 #include <linux/shmem_fs.h>
+#include "edp_bridge_tc358860.h"
 
 #if 0
 #undef DRM_DEBUG_KMS
@@ -77,10 +78,6 @@ void my_drm_ut_debug_printk(unsigned int request_level,
 #endif
 
 #define MAX_BRIGHTNESS	255
-
-#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
-extern void tc358860_send_init_cmd3(void);
-#endif
 
 /*extern*/ int __wait_seqno(struct intel_ring_buffer *ring, u32 seqno,
 				unsigned reset_counter,
@@ -2455,9 +2452,9 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 	}
 
 	intel_crtc->last_pixel_size = pixel_size;
-#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
-        tc358860_send_init_cmd3();
-#endif
+	if (tc358860_has_hw()) {
+	        tc358860_send_init_cmd3();
+	}
 	return 0;
 }
 
