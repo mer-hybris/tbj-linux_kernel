@@ -39,13 +39,7 @@
 #include <drm/drm_crtc_helper.h>
 /*Added for HDMI Audio */
 #include "hdmi_audio_if.h"
-
-
-#ifdef CONFIG_SUPPORT_EDP_BRIDGE_TC358860
-extern int tc358860_has_hw(void);
-extern void tc358860_bridge_enable(struct drm_device *dev);
-extern void tc358860_bridge_disable(struct drm_device *dev);
-#endif
+#include "edp_bridge_tc358860.h"
 
 int i915_rotation __read_mostly;
 module_param_named(i915_rotation, i915_rotation, int, 0600);
