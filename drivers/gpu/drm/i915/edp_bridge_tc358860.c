@@ -432,8 +432,6 @@ void tc358860_bridge_enable(struct drm_device *dev)
         msleep(10);
 
 	// new board reset
-	gpio_set_value(GPIO_SC_8, 1);
-	msleep(10);
 	gpio_set_value(GPIO_SC_8, 0);
 	msleep(10);
 	gpio_set_value(GPIO_SC_8, 1);
