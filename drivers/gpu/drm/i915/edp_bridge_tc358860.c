@@ -386,7 +386,6 @@ void tc358860_bridge_disable(struct drm_device *dev)
 
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PAD, 0x00000004);
-        msleep(10);
 
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PAD, 0x00000004);
@@ -427,7 +426,6 @@ void tc358860_bridge_enable(struct drm_device *dev)
 
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PAD, 0x00000005);
-        msleep(10);
 
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PAD, 0x00000005);
@@ -447,7 +445,6 @@ void tc358860_bridge_enable(struct drm_device *dev)
         ktd2151_regr32(tc358860_client, 0x0180, &data);
         DRM_DEBUG_KMS("data: 0x%x\n", data);
 
-        msleep(10);
 }
 
 #if 0
@@ -649,7 +646,7 @@ void tc358860_send_init_cmd1(struct intel_dp *intel_dp)
         tc358860_regw8(tc358860_client, 0xb800, 0x1e);
         tc358860_regw8(tc358860_client, 0x0700, 0x00);
 
-        msleep(50);
+        msleep(1);
 }
 
 void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
@@ -681,7 +678,7 @@ void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
         tc358860_read_reg(0x4060, 0x03, 7, 32);
 
         tc358860_regw32(tc358860_client, 0x42fc, 0x80001105);
-        msleep(200);
+        msleep(1);
         tc358860_read_reg(0x4200, 0x01, 7, 32);
 
         tc358860_regw32(tc358860_client, 0x42fc, 0x80002905);
