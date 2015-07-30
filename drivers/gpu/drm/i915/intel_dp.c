@@ -3844,8 +3844,16 @@ intel_dp_init_panel_power_sequencer(struct drm_device *dev,
 	 * come up within 100ms. Hard coding it to 100ms for now.
 	 * TODO : Work with IAFW team and get it programmed correctly.
 	 */
-	intel_dp->panel_power_up_delay = 100;
-	intel_dp->backlight_off_delay = 100;
+	if (!tc358860_has_hw()) {
+		intel_dp->panel_power_up_delay = 100;
+		intel_dp->backlight_off_delay = 100;
+	} else {
+		intel_dp->panel_power_up_delay = 0;
+		intel_dp->backlight_off_delay = 0;
+		intel_dp->backlight_on_delay = 0;
+		intel_dp->panel_power_down_delay = 0;
+		intel_dp->panel_power_cycle_delay = 0;
+	}
 
 	DRM_DEBUG_KMS("panel power up delay %d, power down delay %d, power cycle delay %d\n",
 		      intel_dp->panel_power_up_delay, intel_dp->panel_power_down_delay,
