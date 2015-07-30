@@ -86,7 +86,6 @@ static struct i2c_client *ktd2151_client = NULL;
 static struct i2c_client *tc358860_client = NULL;
 
 static struct delayed_work tc358860_work;
-static int num_tc358860 = 0;
 /* Assume BIOS / bootloader has already enabled the converter at boot */
 static int tc358860_enabled = 1;
 
@@ -416,7 +415,6 @@ void tc358860_bridge_disable(struct drm_device *dev)
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PAD, 0x00000004);
         msleep(10);
 
-        num_tc358860 = 0;
 	tc358860_enabled = 0;
 	mutex_unlock(&tc358860_lock);
 }
@@ -706,30 +704,6 @@ void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
         tc358860_regw32(tc358860_client, 0x2a04, 0x01);
         tc358860_regw32(tc358860_client, 0x3a04, 0x01);
 }
-void tc358860_cmd3_work_fboot(void)
-{
-        DRM_DEBUG_KMS("\n");
-        tc358860_regw32(tc358860_client, 0x0154, 0x01);
-        tc358860_read_reg(0xb228, 0x0f50, 0xffff, 16);
-        tc358860_read_reg(0xb22a, 0x0880, 0xffff, 16);
-        tc358860_read_reg(0xb22c, 0x8020, 0xffff, 16);
-        tc358860_read_reg(0xb22e, 0x0048, 0xffff, 16);
-        tc358860_read_reg(0xb230, 0x0008, 0xffff, 16);
-        tc358860_read_reg(0xb232, 0x8002, 0xffff, 16);
-        tc358860_read_reg(0xb234, 0x0f00, 0xffff, 16);
-        tc358860_read_reg(0xb236, 0x0870, 0xffff, 16);
-        tc358860_read_reg(0x8202, 0x77, 0xff, 8);
-        tc358860_read_reg(0x8203, 0x77, 0xff, 8);
-        tc358860_read_reg1(0x8204, 0x81, 0x01, 0xff, 8);
-        tc358860_read_reg(0x810a, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8206, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8207, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8103, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8104, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8105, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8106, 0xff, 0xff, 8);
-	tc358860_read_reg(0x8101, 0x84, 0xff, 8);
-}
 
 void tc358860_cmd3_work(struct work_struct *work)
 {
@@ -761,9 +735,7 @@ void tc358860_cmd3_work(struct work_struct *work)
 
 void tc358860_send_init_cmd3(void)
 {
-        if (num_tc358860++ == 2) {
-                schedule_delayed_work(&tc358860_work, msecs_to_jiffies(5));
-        }
+	schedule_delayed_work(&tc358860_work, 0);
 }
 
 static struct i2c_client *register_i2c_device(int bus, int addr, char *name)

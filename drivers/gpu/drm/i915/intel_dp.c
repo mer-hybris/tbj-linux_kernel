@@ -2141,7 +2141,7 @@ static void intel_enable_dp(struct intel_encoder *encoder)
 	intel_dp_stop_link_train(intel_dp);
 	if (tc358860_has_hw()) {
 		tc358860_send_init_cmd2(intel_dp);
-		tc358860_cmd3_work_fboot();
+		tc358860_send_init_cmd3();
 	}
 	//ironlake_edp_backlight_on(intel_dp);
 }

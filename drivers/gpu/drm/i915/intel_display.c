@@ -2452,9 +2452,6 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 	}
 
 	intel_crtc->last_pixel_size = pixel_size;
-	if (tc358860_has_hw()) {
-	        tc358860_send_init_cmd3();
-	}
 	return 0;
 }
 
