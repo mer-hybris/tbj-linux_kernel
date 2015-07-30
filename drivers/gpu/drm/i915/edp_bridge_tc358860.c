@@ -493,7 +493,7 @@ int tc358860_read_reg(int addr, u32 compare_value, int bit, int value_len)
                         ktd2151_regr32(tc358860_client, addr, &data);
 
                 if (((data & bit) != compare_value) && (compare_value != 0xff)) {
-                        msleep(2);
+                        usleep_range(1000, 2000);
                         continue;
                 } else
                         break;
@@ -522,7 +522,7 @@ int tc358860_read_reg1(int addr, u32 compare_val1,
 
                 if (((data & bit) != compare_val1) &&
                         ((data&bit) != compare_val2)) {
-                        msleep(2);
+                        usleep_range(1000, 2000);
                         continue;
                 } else
                         break;
