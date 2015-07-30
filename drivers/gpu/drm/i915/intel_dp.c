@@ -1334,7 +1334,9 @@ void ironlake_edp_backlight_on(struct intel_dp *intel_dp)
 	 * link.  So delay a bit to make sure the image is solid before
 	 * allowing it to appear.
 	 */
-	msleep(intel_dp->backlight_on_delay + 100);
+	if (!tc358860_has_hw())
+		msleep(intel_dp->backlight_on_delay + 100);
+
 	pp = ironlake_get_pp_control(intel_dp);
 	pp |= EDP_BLC_ENABLE;
 
@@ -2141,7 +2143,7 @@ static void intel_enable_dp(struct intel_encoder *encoder)
 	intel_dp_stop_link_train(intel_dp);
 	if (tc358860_has_hw()) {
 		tc358860_send_init_cmd2(intel_dp);
-		tc358860_cmd3_work_fboot();
+		tc358860_send_init_cmd3();
 	}
 	//ironlake_edp_backlight_on(intel_dp);
 }
@@ -3844,8 +3846,16 @@ intel_dp_init_panel_power_sequencer(struct drm_device *dev,
 	 * come up within 100ms. Hard coding it to 100ms for now.
 	 * TODO : Work with IAFW team and get it programmed correctly.
 	 */
-	intel_dp->panel_power_up_delay = 100;
-	intel_dp->backlight_off_delay = 100;
+	if (!tc358860_has_hw()) {
+		intel_dp->panel_power_up_delay = 100;
+		intel_dp->backlight_off_delay = 100;
+	} else {
+		intel_dp->panel_power_up_delay = 0;
+		intel_dp->backlight_off_delay = 0;
+		intel_dp->backlight_on_delay = 0;
+		intel_dp->panel_power_down_delay = 0;
+		intel_dp->panel_power_cycle_delay = 0;
+	}
 
 	DRM_DEBUG_KMS("panel power up delay %d, power down delay %d, power cycle delay %d\n",
 		      intel_dp->panel_power_up_delay, intel_dp->panel_power_down_delay,

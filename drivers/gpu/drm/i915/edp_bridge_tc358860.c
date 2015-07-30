@@ -86,7 +86,10 @@ static struct i2c_client *ktd2151_client = NULL;
 static struct i2c_client *tc358860_client = NULL;
 
 static struct delayed_work tc358860_work;
-static int num_tc358860 = 0;
+/* Assume BIOS / bootloader has already enabled the converter at boot */
+static int tc358860_enabled = 1;
+
+static struct mutex tc358860_lock;
 
 int tc358860_has_hw(void)
 {
@@ -374,6 +377,11 @@ void tc358860_bridge_disable(struct drm_device *dev)
 	if(hw_missing)
 		return;
 
+	if (!tc358860_enabled)
+		return;
+
+	mutex_lock(&tc358860_lock);
+
         vlv_gpio_nc_write(dev_priv, GPIO_NC_10_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_10_PAD, 0x00000004);
 	msleep(20);
@@ -386,11 +394,10 @@ void tc358860_bridge_disable(struct drm_device *dev)
 
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PAD, 0x00000004);
-        msleep(10);
 
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PAD, 0x00000004);
-        msleep(10);
+        usleep_range(10000, 10001);
 
       //  vlv_gpio_nc_write(dev_priv, GPIO_NC_11_PCONF0, 0x2000CC00);
        // vlv_gpio_nc_write(dev_priv, GPIO_NC_11_PAD, 0x00000004);
@@ -406,9 +413,10 @@ void tc358860_bridge_disable(struct drm_device *dev)
 
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PAD, 0x00000004);
-        msleep(10);
+        usleep_range(10000, 10001);
 
-        num_tc358860 = 0;
+	tc358860_enabled = 0;
+	mutex_unlock(&tc358860_lock);
 }
 
 
@@ -421,33 +429,36 @@ void tc358860_bridge_enable(struct drm_device *dev)
 	if(hw_missing)
 		return;
 
+	if (tc358860_enabled)
+		return;
+
+	mutex_lock(&tc358860_lock);
+
 	//new board power en
 	gpio_set_value(GPIOC_3, 1);
         msleep(20);
 
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PAD, 0x00000005);
-        msleep(10);
 
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PAD, 0x00000005);
-        msleep(10);
+        usleep_range(10000, 10001);
 
 	// new board reset
-	gpio_set_value(GPIO_SC_8, 1);
-	msleep(10);
 	gpio_set_value(GPIO_SC_8, 0);
-	msleep(10);
+        usleep_range(10000, 10001);
 	gpio_set_value(GPIO_SC_8, 1);
 
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PAD, 0x00000005);
-        msleep(10);
+        usleep_range(10000, 10001);
 
         ktd2151_regr32(tc358860_client, 0x0180, &data);
         DRM_DEBUG_KMS("data: 0x%x\n", data);
 
-        msleep(10);
+	tc358860_enabled = 1;
+	mutex_unlock(&tc358860_lock);
 }
 
 #if 0
@@ -482,7 +493,7 @@ int tc358860_read_reg(int addr, u32 compare_value, int bit, int value_len)
                         ktd2151_regr32(tc358860_client, addr, &data);
 
                 if (((data & bit) != compare_value) && (compare_value != 0xff)) {
-                        msleep(2);
+                        usleep_range(1000, 2000);
                         continue;
                 } else
                         break;
@@ -511,7 +522,7 @@ int tc358860_read_reg1(int addr, u32 compare_val1,
 
                 if (((data & bit) != compare_val1) &&
                         ((data&bit) != compare_val2)) {
-                        msleep(2);
+                        usleep_range(1000, 2000);
                         continue;
                 } else
                         break;
@@ -548,7 +559,7 @@ void tc358860_send_init_cmd1(struct intel_dp *intel_dp)
         tc358860_regw32(tc358860_client, 0x1010, 0xd90020);
         tc358860_regw32(tc358860_client, 0x1014, 0x0001);
 
-        msleep(1);
+        usleep_range(1000, 1001);
         tc358860_read_reg(0x1018, 0x02, 7, 32);
 
         tc358860_regw8(tc358860_client, 0xb005, 0x16);
@@ -564,7 +575,7 @@ void tc358860_send_init_cmd1(struct intel_dp *intel_dp)
         tc358860_regw32(tc358860_client, 0x41a8, 0x6590);
         tc358860_regw32(tc358860_client, 0x1014, 0x0003);
 
-        msleep(1);
+        usleep_range(1000, 1001);
         tc358860_read_reg(0x1018, 0x06, 7, 32);
 
         //Additional setting for eDP
@@ -636,10 +647,10 @@ void tc358860_send_init_cmd1(struct intel_dp *intel_dp)
         tc358860_regw8(tc358860_client, 0x800e, 0x00);
         tc358860_regw32(tc358860_client, 0x1014, 0x07);
 
-        msleep(1);
+        usleep_range(1000, 1001);
         tc358860_read_reg(0x1018, 0x07, 7, 32);
 
-        msleep(1);
+        usleep_range(1000, 1001);
         //eDP Setting for Link Training
         tc358860_read_reg(0xb631, 0x01, 3, 8);
 
@@ -649,7 +660,7 @@ void tc358860_send_init_cmd1(struct intel_dp *intel_dp)
         tc358860_regw8(tc358860_client, 0xb800, 0x1e);
         tc358860_regw8(tc358860_client, 0x0700, 0x00);
 
-        msleep(50);
+        usleep_range(1000, 1001);
 }
 
 void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
@@ -677,45 +688,21 @@ void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
         tc358860_regw32(tc358860_client, 0x4050, 0x00);
         tc358860_regw32(tc358860_client, 0x401c, 0x01);
 
-        msleep(1);
+        usleep_range(1000, 1001);
         tc358860_read_reg(0x4060, 0x03, 7, 32);
 
         tc358860_regw32(tc358860_client, 0x42fc, 0x80001105);
-        msleep(200);
+	usleep_range(1000, 1001);
         tc358860_read_reg(0x4200, 0x01, 7, 32);
 
         tc358860_regw32(tc358860_client, 0x42fc, 0x80002905);
-        msleep(1);
+        usleep_range(1000, 1001);
         tc358860_read_reg(0x4200, 0x01, 7, 32);
 
         tc358860_regw32(tc358860_client, 0x2a10, 0x80040010);
         tc358860_regw32(tc358860_client, 0x3a10, 0x80040010);
         tc358860_regw32(tc358860_client, 0x2a04, 0x01);
         tc358860_regw32(tc358860_client, 0x3a04, 0x01);
-}
-void tc358860_cmd3_work_fboot(void)
-{
-        DRM_DEBUG_KMS("\n");
-        tc358860_regw32(tc358860_client, 0x0154, 0x01);
-        tc358860_read_reg(0xb228, 0x0f50, 0xffff, 16);
-        tc358860_read_reg(0xb22a, 0x0880, 0xffff, 16);
-        tc358860_read_reg(0xb22c, 0x8020, 0xffff, 16);
-        tc358860_read_reg(0xb22e, 0x0048, 0xffff, 16);
-        tc358860_read_reg(0xb230, 0x0008, 0xffff, 16);
-        tc358860_read_reg(0xb232, 0x8002, 0xffff, 16);
-        tc358860_read_reg(0xb234, 0x0f00, 0xffff, 16);
-        tc358860_read_reg(0xb236, 0x0870, 0xffff, 16);
-        tc358860_read_reg(0x8202, 0x77, 0xff, 8);
-        tc358860_read_reg(0x8203, 0x77, 0xff, 8);
-        tc358860_read_reg1(0x8204, 0x81, 0x01, 0xff, 8);
-        tc358860_read_reg(0x810a, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8206, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8207, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8103, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8104, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8105, 0xff, 0xff, 8);
-        tc358860_read_reg(0x8106, 0xff, 0xff, 8);
-	tc358860_read_reg(0x8101, 0x84, 0xff, 8);
 }
 
 void tc358860_cmd3_work(struct work_struct *work)
@@ -748,9 +735,7 @@ void tc358860_cmd3_work(struct work_struct *work)
 
 void tc358860_send_init_cmd3(void)
 {
-        if (num_tc358860++ == 2) {
-                schedule_delayed_work(&tc358860_work, msecs_to_jiffies(5));
-        }
+	schedule_delayed_work(&tc358860_work, 0);
 }
 
 static struct i2c_client *register_i2c_device(int bus, int addr, char *name)
@@ -845,6 +830,8 @@ int tc358860_init(struct drm_device *dev)
         }
         gpio_direction_output(SIO_PWM0, 0);
 #endif
+
+	mutex_init(&tc358860_lock);
 
         ktd2151_client = register_i2c_device(3, 0x3e, "i2c_ktd2151");
         if (ktd2151_client == NULL) {
