@@ -87,6 +87,10 @@ static struct i2c_client *tc358860_client = NULL;
 
 static struct delayed_work tc358860_work;
 static int num_tc358860 = 0;
+/* Assume BIOS / bootloader has already enabled the converter at boot */
+static int tc358860_enabled = 1;
+
+static struct mutex tc358860_lock;
 
 int tc358860_has_hw(void)
 {
@@ -374,6 +378,11 @@ void tc358860_bridge_disable(struct drm_device *dev)
 	if(hw_missing)
 		return;
 
+	if (!tc358860_enabled)
+		return;
+
+	mutex_lock(&tc358860_lock);
+
         vlv_gpio_nc_write(dev_priv, GPIO_NC_10_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_10_PAD, 0x00000004);
 	msleep(20);
@@ -408,6 +417,8 @@ void tc358860_bridge_disable(struct drm_device *dev)
         msleep(10);
 
         num_tc358860 = 0;
+	tc358860_enabled = 0;
+	mutex_unlock(&tc358860_lock);
 }
 
 
@@ -419,6 +430,11 @@ void tc358860_bridge_enable(struct drm_device *dev)
         DRM_DEBUG_KMS("\n");
 	if(hw_missing)
 		return;
+
+	if (tc358860_enabled)
+		return;
+
+	mutex_lock(&tc358860_lock);
 
 	//new board power en
 	gpio_set_value(GPIOC_3, 1);
@@ -443,6 +459,8 @@ void tc358860_bridge_enable(struct drm_device *dev)
         ktd2151_regr32(tc358860_client, 0x0180, &data);
         DRM_DEBUG_KMS("data: 0x%x\n", data);
 
+	tc358860_enabled = 1;
+	mutex_unlock(&tc358860_lock);
 }
 
 #if 0
@@ -840,6 +858,8 @@ int tc358860_init(struct drm_device *dev)
         }
         gpio_direction_output(SIO_PWM0, 0);
 #endif
+
+	mutex_init(&tc358860_lock);
 
         ktd2151_client = register_i2c_device(3, 0x3e, "i2c_ktd2151");
         if (ktd2151_client == NULL) {
