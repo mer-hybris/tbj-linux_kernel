@@ -438,11 +438,11 @@ void tc358860_bridge_enable(struct drm_device *dev)
 	gpio_set_value(GPIOC_3, 1);
         msleep(20);
 
-        vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PCONF0, 0x2000CC00);
-        vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PAD, 0x00000005);
-
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PAD, 0x00000005);
+
+        vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PCONF0, 0x2000CC00);
+        vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PAD, 0x00000005);
         usleep_range(10000, 10001);
 
 	// new board reset
