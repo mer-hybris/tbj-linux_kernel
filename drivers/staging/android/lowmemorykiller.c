@@ -51,7 +51,7 @@
 #define _ZONE ZONE_NORMAL
 #endif
 
-#define MAX_SWAP_COMMIT 70
+#define MAX_SWAP_COMMIT 100
 
 static uint32_t lowmem_debug_level = 1;
 static short lowmem_adj[6] = {
