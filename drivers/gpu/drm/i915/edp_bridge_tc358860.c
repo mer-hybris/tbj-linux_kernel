@@ -385,17 +385,16 @@ void tc358860_bridge_disable(struct drm_device *dev)
         tc358860_regw32(tc358860_client, 0x42fc, 0x80005315);
         /* display off command 0x28 */
         tc358860_regw32(tc358860_client, 0x42fc, 0x80002805);
-        /* 100ms sleep. Check! */
+        /* 100ms sleep. */
         msleep(100);
         /* sleep in command 0x10 */
         tc358860_regw32(tc358860_client, 0x42fc, 0x80001005);
-        /* 150ms sleep. Check! */
+        /* 150ms sleep. */
         msleep(150);
 
         /* DSI video transfer stop */
         vlv_gpio_nc_write(dev_priv, GPIO_NC_10_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_10_PAD, 0x00000004);
-        //msleep(20);
 
         /* lcd reset low */
         gpio_set_value(GPIO_SC_8, 0);
@@ -420,7 +419,6 @@ void tc358860_bridge_disable(struct drm_device *dev)
         /* edp to mipi chip in reset */
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PAD, 0x00000004);
-        //usleep_range(10000, 10001);
 
         tc358860_enabled = 0;
         mutex_unlock(&tc358860_lock);
@@ -459,9 +457,9 @@ void tc358860_bridge_enable(struct drm_device *dev)
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PAD, 0x00000005);
 	/* should be 20ms sleep */
-	msleep(20);
+        usleep_range(20000, 20001);
 
-	/* reset to L should have been done sooner, should be reset to H */
+	/* reset to L has been done earlier, reset to H now */
 	gpio_set_value(GPIO_SC_8, 1);
 	/* sleep after reset L-> H 10 ms */
         usleep_range(10000, 10001);
@@ -471,8 +469,11 @@ void tc358860_bridge_enable(struct drm_device *dev)
         usleep_range(10000, 10001);
 	/* reset release L -> H missing */
 	gpio_set_value(GPIO_SC_8, 1);
-	/* 30 ms wait */
-	msleep(30);
+	/* spec states there should be a 30ms delay here. However this causes
+	   visual artefacts (grey screen) which dissappear when removed.
+	   Also the delays involved getting the EDP to MIPI chip
+	   out of reset are likely to cover the delay.
+	 */
 
 	/* EDP to MIPI chip out of reset */
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PCONF0, 0x2000CC00);
@@ -486,7 +487,12 @@ void tc358860_bridge_enable(struct drm_device *dev)
 	tc358860_enabled = 1;
 	mutex_unlock(&tc358860_lock);
 
-	/* rest of screen enable is handled in cmd1, cmd2 and cmd3 */
+	/* rest of screen enable is handled in cmd1, cmd2 and cmd3
+	   * video on happens in cmd1
+	   * sleep out and display on in cmd2
+	   * display pass-through in cmd3
+	*/
+
 }
 
 #if 0
@@ -698,6 +704,7 @@ void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
 	if(hw_missing || !init_done)
 		return;
 
+#if 0
         //Check Link Training Status
         tc358860_read_reg(0x8100, 0x0a, 0xff, 8);
         tc358860_read_reg(0x8202, 0x77, 0xff, 8);
@@ -710,6 +717,7 @@ void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
 	tc358860_read_reg(0x8104, 0xff, 0xff, 8);
 	tc358860_read_reg(0x8105, 0xff, 0xff, 8);
 	tc358860_read_reg(0x8106, 0xff, 0xff, 8);
+#endif
 
         //dsi start
         tc358860_regw32(tc358860_client, 0x407c, 0x81);
@@ -743,6 +751,7 @@ void tc358860_cmd3_work(struct work_struct *work)
 	if(hw_missing || !init_done)
 		return;
         tc358860_regw32(tc358860_client, 0x0154, 0x01);
+#if 0
         tc358860_read_reg(0xb228, 0x0f50, 0xffff, 16);
         tc358860_read_reg(0xb22a, 0x0880, 0xffff, 16);
         tc358860_read_reg(0xb22c, 0x8020, 0xffff, 16);
@@ -762,6 +771,7 @@ void tc358860_cmd3_work(struct work_struct *work)
         tc358860_read_reg(0x8105, 0xff, 0xff, 8);
         tc358860_read_reg(0x8106, 0xff, 0xff, 8);
 	tc358860_read_reg(0x8101, 0x84, 0xff, 8);
+#endif
 }
 
 void tc358860_send_init_cmd3(void)
