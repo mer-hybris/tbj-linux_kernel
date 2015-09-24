@@ -371,54 +371,58 @@ static int tc358860_regw32(struct i2c_client *client, u16 reg, u32 value)
 
 void tc358860_bridge_disable(struct drm_device *dev)
 {
-	struct drm_i915_private *dev_priv = dev->dev_private;
+        struct drm_i915_private *dev_priv = dev->dev_private;
 
         DRM_DEBUG_KMS("\n");
-	if(hw_missing)
-		return;
+        if(hw_missing)
+                return;
 
-	if (!tc358860_enabled)
-		return;
+        if (!tc358860_enabled)
+                return;
 
-	mutex_lock(&tc358860_lock);
+        mutex_lock(&tc358860_lock);
+        /* backlight off command 0x53 parameter 00h */
+        tc358860_regw32(tc358860_client, 0x42fc, 0x80005315);
+        /* display off command 0x28 */
+        tc358860_regw32(tc358860_client, 0x42fc, 0x80002805);
+        /* 100ms sleep. */
+        msleep(100);
+        /* sleep in command 0x10 */
+        tc358860_regw32(tc358860_client, 0x42fc, 0x80001005);
+        /* 150ms sleep. */
+        msleep(150);
 
+        /* DSI video transfer stop */
         vlv_gpio_nc_write(dev_priv, GPIO_NC_10_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_10_PAD, 0x00000004);
-	msleep(20);
 
-     //   vlv_gpio_nc_write(dev_priv, GPIO_NC_9_PCONF0, 0x2000CC00);
-       // vlv_gpio_nc_write(dev_priv, GPIO_NC_9_PAD, 0x00000004);
-	//new board reset to be set 0
-	gpio_set_value(GPIO_SC_8, 0);
-	msleep(30);
+        /* lcd reset low */
+        gpio_set_value(GPIO_SC_8, 0);
+        /* 10 ms sleep */
+        usleep_range(10000, 10001);
 
+        /* VSN OFF */
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PAD, 0x00000004);
 
+        /* 10 ms sleep */
+        usleep_range(10000, 10001);
+
+        /* VSP OFF */
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PAD, 0x00000004);
         usleep_range(10000, 10001);
 
-      //  vlv_gpio_nc_write(dev_priv, GPIO_NC_11_PCONF0, 0x2000CC00);
-       // vlv_gpio_nc_write(dev_priv, GPIO_NC_11_PAD, 0x00000004);
-	//new board pwr en disable
+        /* disable IOVCC */
         gpio_set_value(GPIOC_3, 0);
 
-      //  gpio_set_value(GPIOC_2, 0);
-       // msleep(10);
-      //  gpio_set_value(GPIOC_3, 0);
-      //  msleep(10);
-       // gpio_set_value(GPIO_SC_8, 0);
-     //   msleep(10);
-
+        /* edp to mipi chip in reset */
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PAD, 0x00000004);
-        usleep_range(10000, 10001);
 
-	tc358860_enabled = 0;
-	mutex_unlock(&tc358860_lock);
+        tc358860_enabled = 0;
+        mutex_unlock(&tc358860_lock);
 }
-
 
 void tc358860_bridge_enable(struct drm_device *dev)
 {
@@ -434,31 +438,61 @@ void tc358860_bridge_enable(struct drm_device *dev)
 
 	mutex_lock(&tc358860_lock);
 
-	//new board power en
-	gpio_set_value(GPIOC_3, 1);
-        msleep(20);
+        /* lcd reset low */
+        gpio_set_value(GPIO_SC_8, 0);
 
+	/* IOVCC on */
+	gpio_set_value(GPIOC_3, 1);
+	/* sleep 10ms */
+        usleep_range(10000, 10001);
+
+	/* VSP ON */
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_20_PAD, 0x00000005);
 
+	/* sleep 10ms */
+        usleep_range(10000, 10001);
+
+	/* VSN ON */
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_19_PAD, 0x00000005);
-        usleep_range(10000, 10001);
+	/* should be 20ms sleep */
+        usleep_range(20000, 20001);
 
-	// new board reset
-	gpio_set_value(GPIO_SC_8, 0);
-        usleep_range(10000, 10001);
+	/* reset to L has been done earlier, reset to H now */
 	gpio_set_value(GPIO_SC_8, 1);
+	/* sleep after reset L-> H 10 ms */
+        usleep_range(10000, 10001);
+	/* should be reset H -> L */
+	gpio_set_value(GPIO_SC_8, 0);
+	/* 10 ms wait  */
+        usleep_range(10000, 10001);
+	/* reset release L -> H missing */
+	gpio_set_value(GPIO_SC_8, 1);
+	/* spec states there should be a 30ms delay here. However this causes
+	   visual artefacts (grey screen) which dissappear when removed.
+	   Also the delays involved getting the EDP to MIPI chip
+	   out of reset are likely to cover the delay.
+	 */
 
+	/* EDP to MIPI chip out of reset */
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PCONF0, 0x2000CC00);
         vlv_gpio_nc_write(dev_priv, GPIO_NC_16_PAD, 0x00000005);
         usleep_range(10000, 10001);
 
+	/* DSI video mode transfer start? */
         ktd2151_regr32(tc358860_client, 0x0180, &data);
         DRM_DEBUG_KMS("data: 0x%x\n", data);
 
 	tc358860_enabled = 1;
 	mutex_unlock(&tc358860_lock);
+
+	/* rest of screen enable is handled in cmd1, cmd2 and cmd3
+	   * video on happens in cmd1
+	   * sleep out and display on in cmd2
+	   * display pass-through in cmd3
+	*/
+
 }
 
 #if 0
@@ -670,6 +704,7 @@ void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
 	if(hw_missing || !init_done)
 		return;
 
+#if 0
         //Check Link Training Status
         tc358860_read_reg(0x8100, 0x0a, 0xff, 8);
         tc358860_read_reg(0x8202, 0x77, 0xff, 8);
@@ -682,6 +717,7 @@ void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
 	tc358860_read_reg(0x8104, 0xff, 0xff, 8);
 	tc358860_read_reg(0x8105, 0xff, 0xff, 8);
 	tc358860_read_reg(0x8106, 0xff, 0xff, 8);
+#endif
 
         //dsi start
         tc358860_regw32(tc358860_client, 0x407c, 0x81);
@@ -691,10 +727,13 @@ void tc358860_send_init_cmd2(struct intel_dp *intel_dp)
         usleep_range(1000, 1001);
         tc358860_read_reg(0x4060, 0x03, 7, 32);
 
+	/* send sleep out command 0x11 */
         tc358860_regw32(tc358860_client, 0x42fc, 0x80001105);
+	/* wait for a frame */
 	usleep_range(1000, 1001);
         tc358860_read_reg(0x4200, 0x01, 7, 32);
 
+	/* display on command 0x29 */
         tc358860_regw32(tc358860_client, 0x42fc, 0x80002905);
         usleep_range(1000, 1001);
         tc358860_read_reg(0x4200, 0x01, 7, 32);
@@ -712,6 +751,7 @@ void tc358860_cmd3_work(struct work_struct *work)
 	if(hw_missing || !init_done)
 		return;
         tc358860_regw32(tc358860_client, 0x0154, 0x01);
+#if 0
         tc358860_read_reg(0xb228, 0x0f50, 0xffff, 16);
         tc358860_read_reg(0xb22a, 0x0880, 0xffff, 16);
         tc358860_read_reg(0xb22c, 0x8020, 0xffff, 16);
@@ -731,6 +771,7 @@ void tc358860_cmd3_work(struct work_struct *work)
         tc358860_read_reg(0x8105, 0xff, 0xff, 8);
         tc358860_read_reg(0x8106, 0xff, 0xff, 8);
 	tc358860_read_reg(0x8101, 0x84, 0xff, 8);
+#endif
 }
 
 void tc358860_send_init_cmd3(void)
