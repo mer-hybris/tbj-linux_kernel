@@ -643,8 +643,13 @@ static int dwc3_intel_byt_set_power(struct usb_phy *_otg,
 	case OTG_USB3_150MA:
 		ma = 150;
 		break;
+	/* due to a hw bug (most likely too high input capacitance) the
+	   device does not actually pull enough current (+/-250mA) so
+	   we bump this to the next level (0-100, 0-500, 0-900, ..).
+	   This is slightly out of spec (~600), but should be ok
+	   anyway on USB3 ports */
 	case OTG_USB2_500MA:
-		ma = 500;
+		ma = 900;
 		break;
 	case OTG_USB3_900MA:
 		ma = 900;
